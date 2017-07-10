@@ -4,4 +4,8 @@ The difference between DenseNet-BC and original DenseNet is using 1x1 convolutio
 in DenseBlock.
 
 2 kinds of DenseNet is defined in `densenet.py`: `DenseNetCifar` & `DenseNetImagenet`.
+Inputs for the former / latter are 32x32 / 224x224 sized images.
 
+# Results of not tuned cifar100
+![accuracy](https://raw.githubusercontent.com/crcrpar/ChainerDenseNet/plot/plot_images/accuracy.png)
+![loss](https://github.com/crcrpar/ChainerDenseNet/blob/plot/plot_images/loss.png?raw=true)
