@@ -12,7 +12,7 @@ Inputs for the former / latter are supposed to be 32x32 / 224x224 sized images.
 - ChainerCV 0.5.1
 - OpenCV w/ contrib 3.2.0.7
 
-**FIY**: You can install OpenCV with or without contrib for python via pip: `pip install opencv-python` or `pip install opencv-contrib-python`.
+**FYI**: You can install OpenCV with or without contrib for python via pip: `pip install opencv-python` or `pip install opencv-contrib-python`.
 - [opencv-python](https://pypi.python.org/pypi/opencv-python)
 - [opencv-contrib-python](https://pypi.python.org/pypi/opencv-contrib-python)
 
@@ -24,3 +24,13 @@ Inputs for the former / latter are supposed to be 32x32 / 224x224 sized images.
 
 ## Training
 In my environment (GTX 1080), one epoch including validation took around 210 seconds.
+
+## about model size
+As to `DenseNetImagenet` or `DenseNet` in `densenet.py`, examples of # of layers are below.
+
+| # of layers | growth rate | # of layer of each block |
+|:-----------:|:-----------:|:------------------------:|
+| 121         |     32      | 6, 12, 24, 16            |
+| 169         |     32      | 6, 12, 32, 32            |
+| 201         |     32      | 6, 12, 48, 32            |
+| 161         |     48      | 6, 12, 36, 32            |
