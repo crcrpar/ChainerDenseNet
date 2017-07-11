@@ -36,6 +36,15 @@ class DenseBlock(chainer.Chain):
     """
 
     def __init__(self, n_layers, in_ch, bn_size, growth_rate, dropout_rate=0.5):
+        """initialization of Dense Block
+
+        Args:
+            n_layers (int): # of DenseLayer in DenseBlock
+            in_ch (int): # of input tensor's channel
+            bn_size (int): default, 4.
+            growth_rate (int):
+            dropout_rate (float, \in [0, 1)): if greater than 0, use dropout_rate
+        """
         super(DenseBlock, self).__init__()
         with self.init_scope():
             for i in range(n_layers):
@@ -182,30 +191,60 @@ class DenseNetImagenet(chainer.Chain):
         return self.prob(h)
 
 
-if __name__ == '__main__':
-    import numpy as np
-    # Feed Forward test for ImageNet
-    x = np.random.randn(10, 3, 224, 224).astype(np.float32)
-    x1 = np.random.randn(10, 16, 24, 24).astype(np.float32)
-    dl = DenseLayer(3, 2, 2)
-    out = dl(x)
-    dl1 = DenseLayer(16, 2, 2)
-    out1 = dl1(x1)
-    print('out.shape: {}'.format(out.shape))
-    print('out.shape: {}'.format(out1.shape))
+class DenseNet(chainer.Chain):
 
-    db = DenseBlock(2, 16, 4, 4, dropout_rate=0)
-    x = np.random.randn(10, 16, 224, 224).astype(np.float32)
-    print('db dict\n{}'.format(db._children))
-    print('db.denselayer1.in_ch: {}'.format(db.denselayer1.in_ch))
-    print('db.denselayer2.in_ch: {}'.format(db.denselayer2.in_ch))
-    db_out = db(x)
-    print('db_out.shape: {}'.format(db_out.shape))
+    """DenseBlock consists of any number of blocks.
 
-    # m = DenseNetImagenet()
-    # pred = m.forward(x)
+    You specify the number of block via n_layers.
+    """
 
-    x = np.random.normal(size=(10, 3, 32, 32)).astype(np.float32)
-    m = DenseNetCifar(n_class=100)
-    pred = m.forward(x)
-    print('pred.shape: {}'.format(pred.shape))
+    def __init__(self, growth_rate=32, n_layers=(6, 12, 24, 16), init_features=64, bn_size=4, dropout_rate=0, n_class=1000):
+        """Initialization of DenseNet
+
+        Args:
+            growth_rate (int): default, 32
+            n_layers (tuple of int): specify the number of blocks and
+                the number of denselayer for each block
+            init_features (int): the number of channel of output of conv1
+            bn_size (int): default, 4
+            dropout_rate (float, \in [0, 1)): if > 0, use dropout
+            n_class (int): the number of target classes
+        """
+        super(DenseNet, self).__init__()
+
+        self.n_block = len(n_layers)
+        self.n_class = n_class
+
+        with self.init_scope():
+            initialW = initializers.HeNormal()
+            self.conv1 = L.Convolution2D(
+                None, init_features, 7, 2, 3, initialW=initialW, nobias=True)
+            self.bn1 = L.BatchNormalization(init_features)
+
+            n_feature = init_features
+            for block_idx, n_layer in enumerate(n_layers):
+                setattr(self, 'block{}'.format(block_idx + 1), DenseBlock(n_layer,
+                                                                          n_feature, bn_size, growth_rate, dropout_rate))
+                n_feature += n_layer * growth_rate
+                if block_idx + 1 < self.n_block:
+                    setattr(self, 'trans{}'.format(
+                        block_idx + 1), Transition(n_feature, dropout_rate=dropout_rate))
+                else:
+                    setattr(self, 'bn{}'.format(block_idx + 1),
+                            L.BatchNormalization(n_feature))
+            self.prob = L.Linear(None, self.n_class)
+
+    def __call__(self, x):
+        """Feed-Forward computation."""
+        batch_size = len(x)
+        h = F.relu(self.bn1(self.conv1(x)))
+
+        for block_idx in range(1, self.n_block + 1):
+            h = getattr(self, 'block{}'.format(block_idx))(h)
+            if block_idx < self.n_block:
+                h = getattr(self, 'trans{}'.format(block_idx))(h)
+            else:
+                h = getattr(self, 'bn{}'.format(block_idx))(h)
+
+        h = F.reshape(h, (batch_size, -1))
+        return self.prob(h)
