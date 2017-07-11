@@ -4,7 +4,8 @@ The difference between DenseNet-BC and original DenseNet is using 1x1 convolutio
 in DenseBlock.
 
 3 kinds of DenseNet is defined in `densenet.py`: `DenseNetCifar`, `DenseNetImagenet`, & `DenseNet`.
-DenseNet is able to handle any number of blocks, any number of layers for each block,
+`DenseNetCifar` and `DenseNetImagenet` consists of 4 DenseBlocks, while you can change # of blocks and # of layers for each block
+by passing `n_layers` which is an argument of `DenseNet`.
 
 ## Environment
 - Python 3.5.2
@@ -17,6 +18,7 @@ DenseNet is able to handle any number of blocks, any number of layers for each b
 - [opencv-contrib-python](https://pypi.python.org/pypi/opencv-contrib-python)
 
 # Results of cifar100, no tuning
+Whole training log is in [result_cifar100/log.json](https://github.com/crcrpar/ChainerDenseNet/blob/master/result_cifar100/log.json)
 ## accuracy
 ![accuracy](https://raw.githubusercontent.com/crcrpar/ChainerDenseNet/plot/plot_images/accuracy.png)
 ## loss
