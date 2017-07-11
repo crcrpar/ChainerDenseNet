@@ -3,8 +3,8 @@ This is an implementation of [DenseNet-BC](https://arxiv.org/abs/1608.06993).
 The difference between DenseNet-BC and original DenseNet is using 1x1 convolutional layer before each 3x3 convolutional layer
 in DenseBlock.
 
-2 kinds of DenseNet is defined in `densenet.py`: `DenseNetCifar` & `DenseNetImagenet`.
-Inputs for the former / latter are supposed to be 32x32 / 224x224 sized images.
+3 kinds of DenseNet is defined in `densenet.py`: `DenseNetCifar`, `DenseNetImagenet`, & `DenseNet`.
+DenseNet is able to handle any number of blocks, any number of layers for each block,
 
 ## Environment
 - Python 3.5.2
