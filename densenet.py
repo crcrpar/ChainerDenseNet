@@ -6,9 +6,19 @@ from chainer import initializers
 
 
 class DenseLayer(chainer.Chain):
-    """component of DenseBlock"""
+
+    """element of DenseBlock"""
 
     def __init__(self, in_ch, growth_rate, bn_size, dropout_rate=0.5):
+        r"""initialization of denselayer.
+
+        Args:
+            in_ch (int): the number of inputs' channels
+            growth_rate (int): growth_rate
+            bn_size (int): bn size
+            dropout_rate (float): dropout rate \in [0, 1). If > 0,
+                apply dropout
+        """
         super(DenseLayer, self).__init__()
         with self.init_scope():
             initialW = initializers.HeNormal()
@@ -22,6 +32,7 @@ class DenseLayer(chainer.Chain):
         self.in_ch = in_ch
 
     def __call__(self, x):
+        """Feed-Forward calculation."""
         h = self.conv_1(F.relu(self.bn_1(x)))
         h = self.conv_2(F.relu(self.bn_2(h)))
         if self.dropout_rate > 0:
@@ -30,13 +41,11 @@ class DenseLayer(chainer.Chain):
 
 
 class DenseBlock(chainer.Chain):
-    """one block of DenseNet.
 
-    DenseNet consists of 4 Blocks and 4 Transition
-    """
+    """One block of DenseNet."""
 
     def __init__(self, n_layers, in_ch, bn_size, growth_rate, dropout_rate=0.5):
-        """initialization of Dense Block
+        r"""initialization of Dense Block.
 
         Args:
             n_layers (int): # of DenseLayer in DenseBlock
@@ -54,6 +63,7 @@ class DenseBlock(chainer.Chain):
         self.n_layers = n_layers
 
     def __call__(self, x):
+        """Feed-Forward calculation."""
         h = x
         for i in range(1, self.n_layers + 1):
             h = getattr(self, 'denselayer{}'.format(i))(h)
@@ -62,7 +72,19 @@ class DenseBlock(chainer.Chain):
 
 class Transition(chainer.Chain):
 
+    """Transition unit.
+
+    This block halve width and height of inputs.
+    """
+
     def __init__(self, in_ch, dropout_rate):
+        r"""Initialization of Transition.
+
+        Args:
+            in_ch (int): # of inputs' channels
+            dropout_rate (float): dropout_rate \in (0, 1]. If > 0,
+                apply dropout
+        """
         super(Transition, self).__init__()
         with self.init_scope():
             initialW = initializers.HeNormal()
@@ -72,6 +94,7 @@ class Transition(chainer.Chain):
         self.dropout_rate = dropout_rate
 
     def __call__(self, x):
+        """Feed-Forward calculation."""
         h = F.relu(self.bn(x))
         h = F.dropout(self.conv(h), self.dropout_rate)
         h = F.average_pooling_2d(h, 2)
@@ -80,7 +103,23 @@ class Transition(chainer.Chain):
 
 class DenseNetCifar(chainer.Chain):
 
+    """DenseNet for CIFAR10 / CIFAR100.
+
+    This class takes as input (n_channel, 32, 32) sized images.
+    """
+
     def __init__(self, growth_rate=32, n_layers=(6, 12, 24, 16), init_features=64, bn_size=4, dropout_rate=0, n_class=1000):
+        r"""Initialization of DenseNetImagenet.
+
+        Args:
+            growth_rate (int): growth_rate
+            n_layers (int): # of layers for each block
+            init_features (int): # of self.conv1's outputs' channels
+            bn_size (int): bn_size
+            dropout_rate (float): dropout rate \in [0, 1). If > 0,
+                apply dropout
+            n_class (int): # of class
+        """
         super(DenseNetCifar, self).__init__()
         with self.init_scope():
             initialW = initializers.HeNormal()
@@ -113,6 +152,7 @@ class DenseNetCifar(chainer.Chain):
         self.n_class = n_class
 
     def __call__(self, x):
+        """Feed-Forward calculation."""
         bs = len(x)
         h = F.relu(self.bn1(self.conv1(x)))
 
@@ -136,7 +176,23 @@ class DenseNetCifar(chainer.Chain):
 
 class DenseNetImagenet(chainer.Chain):
 
+    """DenseNet for ImageNet.
+
+    This class takes as input (n_channel, 224, 224) sized images.
+    """
+
     def __init__(self, growth_rate=32, n_layers=(6, 12, 24, 16), init_features=64, bn_size=4, dropout_rate=0, n_class=1000):
+        r"""Initialization of DenseNetImagenet.
+
+        Args:
+            growth_rate (int): growth_rate
+            n_layers (int): # of layers for each block
+            init_features (int): # of self.conv1's outputs' channels
+            bn_size (int): bn_size
+            dropout_rate (float): dropout rate \in [0, 1). If > 0,
+                apply dropout
+            n_class (int): # of class
+        """
         super(DenseNetImagenet, self).__init__()
         with self.init_scope():
             initialW = initializers.HeNormal()
@@ -169,6 +225,7 @@ class DenseNetImagenet(chainer.Chain):
         self.n_class = n_class
 
     def __call__(self, x):
+        """Feed-Forward calculation."""
         bs = len(x)
         h = F.relu(self.bn1(self.conv1(x)))
         h = F.max_pooling_2d(h, 3, stride=2)
