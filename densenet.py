@@ -36,6 +36,15 @@ class DenseBlock(chainer.Chain):
     """
 
     def __init__(self, n_layers, in_ch, bn_size, growth_rate, dropout_rate=0.5):
+        """initialization of Dense Block
+
+        Args:
+            n_layers (int): # of DenseLayer in DenseBlock
+            in_ch (int): # of input tensor's channel
+            bn_size (int): default, 4.
+            growth_rate (int):
+            dropout_rate (float, \in [0, 1)): if greater than 0, use dropout_rate
+        """
         super(DenseBlock, self).__init__()
         with self.init_scope():
             for i in range(n_layers):
@@ -179,6 +188,65 @@ class DenseNetImagenet(chainer.Chain):
         h = F.average_pooling_2d(h, 7)
         h = F.reshape(h, (bs, -1))
 
+        return self.prob(h)
+
+
+class DenseNet(chainer.Chain):
+
+    """DenseBlock consists of any number of blocks.
+
+    You specify the number of block via n_layers.
+    """
+
+    def __init__(self, growth_rate=32, n_layers=(6, 12, 24, 16), init_features=64, bn_size=4, dropout_rate=0, n_class=1000):
+        """Initialization of DenseNet
+
+        Args:
+            growth_rate (int): default, 32
+            n_layers (tuple of int): specify the number of blocks and
+                the number of denselayer for each block
+            init_features (int): the number of channel of output of conv1
+            bn_size (int): default, 4
+            dropout_rate (float, \in [0, 1)): if > 0, use dropout
+            n_class (int): the number of target classes
+        """
+        super(DenseNet, self).__init__()
+
+        self.n_block = len(n_layers)
+        self.n_class = n_class
+
+        with self.init_scope():
+            initialW = initializers.HeNormal()
+            self.conv1 = L.Convolution2D(
+                None, init_features, 7, 2, 3, initialW=initialW, nobias=True)
+            self.bn1 = L.BatchNormalization(init_features)
+
+            n_feature = init_features
+            for block_idx, n_layer in enumerate(n_layers):
+                setattr(self, 'block{}'.format(block_idx + 1), DenseBlock(n_layer,
+                                                                          n_features, bn_size, growth_rate, dropout_rate))
+                n_feature += n_layer * growth_rate
+                if block_idx + 1 < self.n_block:
+                    setattr(self, 'trans{}'.format(
+                        block_idx + 1), Transition(n_feature))
+                else:
+                    setattr(self, 'bn{}'.format(n_feature),
+                            L.BatchNormalization(n_feature))
+            self.prob = L.Linear(None, self.n_class)
+
+    def __call__(self, x):
+        """Feed-Forward computation."""
+        batch_size = len(x)
+        h = F.relu(self.bn1(self.conv1(x)))
+
+        for block_idx in range(1, self.n_block + 1):
+            h = getattr(self, 'block{}'.format(block_idx))(h)
+            if block_idx < self.n_block:
+                h = getattr(self, 'trans{}'.format(block_idx))(h)
+            else:
+                h = getattr(self, 'bn{}'.format(block_idx))(h)
+
+        h = F.reshape(h, (batch_size, self.n_class))
         return self.prob(h)
 
 
