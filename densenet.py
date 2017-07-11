@@ -224,13 +224,13 @@ class DenseNet(chainer.Chain):
             n_feature = init_features
             for block_idx, n_layer in enumerate(n_layers):
                 setattr(self, 'block{}'.format(block_idx + 1), DenseBlock(n_layer,
-                                                                          n_features, bn_size, growth_rate, dropout_rate))
+                                                                          n_feature, bn_size, growth_rate, dropout_rate))
                 n_feature += n_layer * growth_rate
                 if block_idx + 1 < self.n_block:
                     setattr(self, 'trans{}'.format(
-                        block_idx + 1), Transition(n_feature))
+                        block_idx + 1), Transition(n_feature, dropout_rate=dropout_rate))
                 else:
-                    setattr(self, 'bn{}'.format(n_feature),
+                    setattr(self, 'bn{}'.format(block_idx + 1),
                             L.BatchNormalization(n_feature))
             self.prob = L.Linear(None, self.n_class)
 
@@ -246,34 +246,5 @@ class DenseNet(chainer.Chain):
             else:
                 h = getattr(self, 'bn{}'.format(block_idx))(h)
 
-        h = F.reshape(h, (batch_size, self.n_class))
+        h = F.reshape(h, (batch_size, -1))
         return self.prob(h)
-
-
-if __name__ == '__main__':
-    import numpy as np
-    # Feed Forward test for ImageNet
-    x = np.random.randn(10, 3, 224, 224).astype(np.float32)
-    x1 = np.random.randn(10, 16, 24, 24).astype(np.float32)
-    dl = DenseLayer(3, 2, 2)
-    out = dl(x)
-    dl1 = DenseLayer(16, 2, 2)
-    out1 = dl1(x1)
-    print('out.shape: {}'.format(out.shape))
-    print('out.shape: {}'.format(out1.shape))
-
-    db = DenseBlock(2, 16, 4, 4, dropout_rate=0)
-    x = np.random.randn(10, 16, 224, 224).astype(np.float32)
-    print('db dict\n{}'.format(db._children))
-    print('db.denselayer1.in_ch: {}'.format(db.denselayer1.in_ch))
-    print('db.denselayer2.in_ch: {}'.format(db.denselayer2.in_ch))
-    db_out = db(x)
-    print('db_out.shape: {}'.format(db_out.shape))
-
-    # m = DenseNetImagenet()
-    # pred = m.forward(x)
-
-    x = np.random.normal(size=(10, 3, 32, 32)).astype(np.float32)
-    m = DenseNetCifar(n_class=100)
-    pred = m.forward(x)
-    print('pred.shape: {}'.format(pred.shape))
